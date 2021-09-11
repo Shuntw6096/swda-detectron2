@@ -74,17 +74,21 @@ class SWDARCNN(GeneralizedRCNN):
             gt_instances = None
         
         features = self.backbone(images.tensor)
-        resnet_feat = {'local feature':features.pop('res2'), 'global feature':features.pop('res4'), 'feature domain': input_domain}
+        resnet_feat = {
+            'local_head_feature': features.pop('res2'), 
+            'global_head_feature': features.pop('res4'), 
+            'feature domain': input_domain,
+            }
         if input_domain == 'source':
-            reg_local_feat, reg_global_feat, da_loss = self.da_heads(resnet_feat)
+            reg_faeture, da_loss = self.da_heads(resnet_feat)
 
         elif input_domain == 'target':
-            _, _, da_loss = self.da_heads(resnet_feat)
+            _, da_loss = self.da_heads(resnet_feat)
             losses = {}
             losses.update(da_loss)
             return losses
 
-        features.update({'local feature': reg_local_feat, 'global feature': reg_global_feat})
+        features.update(reg_faeture)
 
         if self.proposal_generator is not None:
             proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
@@ -132,9 +136,13 @@ class SWDARCNN(GeneralizedRCNN):
         images = self.preprocess_image(batched_inputs)
         features = self.backbone(images.tensor)
         # context regularization vector
-        resnet_feat = {'local feature':features.pop('res2'), 'global feature':features.pop('res4'), 'feature domain': None}
-        reg_local_feat, reg_global_feat = self.da_heads(resnet_feat)
-        features.update({'local feature': reg_local_feat, 'global feature': reg_global_feat})
+        resnet_feat = {
+            'local_head_feature': features.pop('res2'), 
+            'global_head_feature': features.pop('res4'), 
+            'feature domain': None
+            }
+        reg_feat = self.da_heads(resnet_feat)
+        features.update(reg_feat)
         if detected_instances is None:
             if self.proposal_generator is not None:
                 proposals, _ = self.proposal_generator(images, features, None)

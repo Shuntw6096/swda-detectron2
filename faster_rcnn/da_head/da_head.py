@@ -79,17 +79,28 @@ class LocalAlignmentHead(nn.Module):
 class AlignmentHead(nn.Module):
 
   @configurable
-  def __init__(self, *, gamma=5.0):
+  def __init__(self, *, local_alignment_on, global_alignment_on, gamma=5.0):
+    # define network structure
     super().__init__()
-    self.localhead = LocalAlignmentHead(context=True)
-    self.grl_localhead = GradientScalarLayer(-1.0)
-    self.globalhead = GlobalAlignmentHead(context=True)
-    self.grl_globalhead = GradientScalarLayer(-1.0)
+    if local_alignment_on:
+      self.localhead = LocalAlignmentHead(context=True)
+      self.grl_localhead = GradientScalarLayer(-1.0)
+    else:
+      self.localhead = None
+    if global_alignment_on:
+      self.globalhead = GlobalAlignmentHead(context=True)
+      self.grl_globalhead = GradientScalarLayer(-1.0)
+    else:
+      self.globalhead = None
     self.gamma = gamma
 
   @classmethod
   def from_config(cls, cfg):
-    return {'gamma': cfg.DA_HEAD.GAMMA}
+    return {
+      'gamma': cfg.DA_HEADS.GAMMA,
+      'local_alignment_on': cfg.DA_HEADS.LOCAL_ALIGNMENT_ON,
+      'global_alignment_on': cfg.DA_HEADS.GLOBAL_ALIGNMENT_ON,
+    }
   
   def forward(self, inputs):
     '''
@@ -98,31 +109,45 @@ class AlignmentHead(nn.Module):
     returns:
 
     '''
-    feat_local = inputs['local feature']
-    feat_global = inputs['global feature']
+    feat_local = inputs['local_head_feature']
+    feat_global = inputs['global_head_feature']
     feat_domain = inputs['feature domain']
-    # localhead branch
-    _, reg_local_feat = self.localhead(feat_local.detach())
-    # globalhead branch
-    _, reg_global_feat = self.globalhead(feat_global.detach())
+
+    reg_local_feat = None
+    reg_global_feat = None
+    loss = {}
+
+    if self.localhead:
+      # localhead branch
+      _, reg_local_feat = self.localhead(feat_local.detach())
+    if self.globalhead:
+      # globalhead branch
+      _, reg_global_feat = self.globalhead(feat_global.detach())
 
     if self.training:
-      feat_2d, _ = self.localhead(self.grl_localhead(feat_local))
-      feat_value, _ = self.globalhead(self.grl_globalhead(feat_global))
-      if feat_domain == 'source':
-        domain_label = torch.ones_like(feat_value, requires_grad=True, device=feat_2d.device)
+      if self.localhead:
+        feat_2d, _ = self.localhead(self.grl_localhead(feat_local))
         # local alignment, gan loss, l2-norm
-        domain_loss_local = 0.5 * torch.mean(torch.sigmoid(feat_2d) ** 2)
-      elif feat_domain == 'target':
-        domain_label = torch.zeros_like(feat_value, requires_grad=True, device=feat_2d.device)
-        # local alignment, gan loss, l2-norm
-        domain_loss_local = 0.5 * torch.mean(torch.sigmoid(1 - feat_2d) ** 2)
+        if feat_domain == 'source':
+          domain_loss_local = 0.5 * torch.mean(torch.sigmoid(feat_2d) ** 2)
+        elif feat_domain =='target':
+          domain_loss_local = 0.5 * torch.mean(torch.sigmoid(1 - feat_2d) ** 2)
+        loss.update({'loss_local_alignment': domain_loss_local})
 
-      # global alignment, focal loss  
-      focal_loss_global = sigmoid_focal_loss_jit(feat_value, domain_label, gamma=self.gamma, reduction='mean')
-      return reg_local_feat, reg_global_feat, {'local_alignment_loss': domain_loss_local, 'global_alignment_loss': focal_loss_global}
+      if self.globalhead:
+        feat_value, _ = self.globalhead(self.grl_globalhead(feat_global))
+        if feat_domain == 'source':
+          domain_label = torch.ones_like(feat_value, requires_grad=True, device=feat_value.device)
+        elif feat_domain == 'target':
+          domain_label = torch.zeros_like(feat_value, requires_grad=True, device=feat_value.device)
+        # global alignment, focal loss
+        focal_loss_global = sigmoid_focal_loss_jit(feat_value, domain_label, gamma=self.gamma, reduction='mean')
+        loss.update({'loss_global_alignment': focal_loss_global})
+
+      return {'local_head_feature': reg_local_feat, 'global_head_feature': reg_global_feat}, loss
+
     else:
-      return reg_local_feat, reg_global_feat
+      return {'local_head_feature': reg_local_feat, 'global_head_feature': reg_global_feat}
 
 
 def build_da_heads(cfg):
