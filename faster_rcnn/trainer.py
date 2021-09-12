@@ -115,5 +115,77 @@ class DATrainer(DefaultTrainer):
     def build_evaluator(cls, cfg, dataset_name):
         return PascalVOCDetectionEvaluator_(dataset_name)
 
-# class FewShotTuner(DefaultTrainer):
-#     # Target domain few-shot tuner
+def fewshot_tuning_cfg(cfg):
+    # update some settings for few-shot tuning
+    cfg = cfg.clone()
+    frozen = cfg.is_frozen()
+    cfg.defrost()
+    cfg.SOLVER = cfg.FEWSHOT_TUNING.SOLVER
+    cfg.DATASETS = cfg.FEWSHOT_TUNING.DATASETS
+    if frozen:
+        cfg.freeze()
+    return cfg
+
+class FewShotTuner(DefaultTrainer):
+    # Target domain few-shot tuner
+    def __init__(self, cfg):
+        """
+        Args:
+            cfg (CfgNode):
+        """
+        super(DefaultTrainer, self).__init__()
+        logger = logging.getLogger("detectron2")
+        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
+            setup_logger()
+        cfg = fewshot_tuning_cfg(cfg)
+        cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
+
+        # Assume these objects must be constructed in this order.
+        model = self.build_model(cfg)
+        optimizer = self.build_optimizer(cfg, model)
+        data_loader = self.build_train_loader(cfg)
+
+        model = create_ddp_model(model, broadcast_buffers=False)
+        self._trainer = SimpleTrainer(
+            model, data_loader, optimizer
+        )
+
+        self.scheduler = self.build_lr_scheduler(cfg, optimizer)
+        self.checkpointer = DetectionCheckpointer(
+            # Assume you want to save checkpoints together with logs/statistics
+            model,
+            cfg.OUTPUT_DIR,
+            trainer=weakref.proxy(self),
+        )
+        self.start_iter = 0
+        self.max_iter = cfg.SOLVER.MAX_ITER
+        self.cfg = cfg
+
+        self.register_hooks(self.build_hooks())
+
+    @classmethod
+    def freeze_da_heads(cls, trainer):
+        assert isinstance(trainer, DefaultTrainer)
+        for p in trainer.model.da_heads.parameters():
+            p.requires_grad = False
+
+    def resume_or_load(self, resume=True):
+        """
+        If `resume==True` and `cfg.OUTPUT_DIR` contains the last checkpoint (defined by
+        a `last_checkpoint` file), resume from the file. Resuming means loading all
+        available states (eg. optimizer and scheduler) and update iteration counter
+        from the checkpoint. ``cfg.MODEL.WEIGHTS`` will not be used.
+
+        Otherwise, this is considered as an independent training. The method will load model
+        weights from the file `cfg.MODEL.WEIGHTS` (but will not load other states) and start
+        from iteration 0.
+
+        Args:
+            resume (bool): whether to do resume or not
+        """
+        self.checkpointer.resume_or_load(self.cfg.FEWSHOT_TUNING.MODEL.WEIGHTS, resume=resume)
+        if resume and self.checkpointer.has_checkpoint():
+            # The checkpoint stores the training iteration that just finished, thus we start
+            # at the next iteration
+            self.start_iter = self.iter + 1
+
