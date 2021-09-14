@@ -97,9 +97,9 @@ class AlignmentHead(nn.Module):
   @classmethod
   def from_config(cls, cfg):
     return {
-      'gamma': cfg.DA_HEADS.GAMMA,
-      'local_alignment_on': cfg.DA_HEADS.LOCAL_ALIGNMENT_ON,
-      'global_alignment_on': cfg.DA_HEADS.GLOBAL_ALIGNMENT_ON,
+      'gamma': cfg.MODEL.DA_HEADS.GAMMA,
+      'local_alignment_on': cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON,
+      'global_alignment_on': cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON,
     }
   
   def forward(self, inputs):

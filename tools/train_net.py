@@ -24,11 +24,11 @@ from faster_rcnn.da_head.da_roi_head import DAROIHeads
 def add_swdarcnn_config(cfg):
     from detectron2.config import CfgNode as CN
     _C = cfg
-    _C.DA_HEADS = CN()
+    _C.MODEL.DA_HEADS = CN()
     
-    _C.DA_HEADS.LOCAL_ALIGNMENT_ON = True
-    _C.DA_HEADS.GLOBAL_ALIGNMENT_ON = True
-    _C.DA_HEADS.GAMMA = 5.0
+    _C.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON = True
+    _C.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON = True
+    _C.MODEL.DA_HEADS.GAMMA = 5.0
     _C.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON = True
     _C.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_FEATURES = ['local_head_feature', 'global_head_feature']
     _C.DATASETS.SOURCE_DOMAIN = CN()
@@ -36,9 +36,11 @@ def add_swdarcnn_config(cfg):
     _C.DATASETS.TARGET_DOMAIN = CN()
     _C.DATASETS.TARGET_DOMAIN.TRAIN = ()
 
+    _C_ = _C.clone()
     _C.FEWSHOT_TUNING = CN()
-    _C.FEWSHOT_TUNING.SOLVER = _C.SOLVER
-    _C.FEWSHOT_TUNING.DATASETS = _C.DATASETS
+    _C.FEWSHOT_TUNING.SOLVER = _C_.SOLVER # can not copy directly, because node is same, right one will be modified
+    _C.FEWSHOT_TUNING.DATASETS = _C_.DATASETS
+
     _C.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON = True
     _C.FEWSHOT_TUNING.MODEL = CN()
     _C.FEWSHOT_TUNING.MODEL.WEIGHTS = ''
@@ -51,7 +53,7 @@ def setup(args):
     now = datetime.now()
     if args.tuning_only:
         cfg.OUTPUT_DIR = './outputs/output-tuning-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
-    else:
+    elif not args.resume:
         cfg.OUTPUT_DIR = './outputs/output-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
     cfg.freeze()
     if not args.test_images:
