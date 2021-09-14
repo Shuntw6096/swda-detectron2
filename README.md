@@ -82,7 +82,7 @@ MODEL:
     # boxes are outputed on images while testing if its confidence is above threshold
     SCORE_THRESH_TEST: 0.75
   ROI_BOX_HEAD:
-  	# if using context vector base regularization, it is fixed
+    # if using context vector base regularization, it is fixed
     FC_DIM: 256
 
   # Domain adaptation head settings
@@ -111,7 +111,7 @@ TEST:
 # Few-shot tuning settings
 FEWSHOT_TUNING:
   MODEL:
-  	# the path of model weight being tuned
+    # the path of model weight being tuned
     WEIGHTS: ""
   # determine whether to freeze domain adaptation head during tuning 
   DOMAIN_ADAPTATION_ON: False
