@@ -40,6 +40,7 @@ def add_swdarcnn_config(cfg):
     _C.FEWSHOT_TUNING = CN()
     _C.FEWSHOT_TUNING.SOLVER = _C_.SOLVER # can not copy directly, because node is same, right one will be modified
     _C.FEWSHOT_TUNING.DATASETS = _C_.DATASETS
+
     _C.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON = True
     _C.FEWSHOT_TUNING.MODEL = CN()
     _C.FEWSHOT_TUNING.MODEL.WEIGHTS = ''
