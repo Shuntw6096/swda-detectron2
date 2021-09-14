@@ -105,9 +105,12 @@ class AlignmentHead(nn.Module):
   def forward(self, inputs):
     '''
     inputs: 
-      dict[str->Tensor], local feature, global feature, feature domain
-    returns:
-
+      dict[str->Tensor], local_head_feature:Tensor, global_head_feature:Tensor, feature domain:str
+    outputs:
+      training:
+        feature_dict, loss_dict
+      inference:
+        feature_dict
     '''
     feat_local = inputs['local_head_feature']
     feat_global = inputs['global_head_feature']

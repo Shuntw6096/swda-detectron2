@@ -171,6 +171,7 @@ def fewshot_tuning_cfg(cfg):
     cfg.defrost()
     cfg.SOLVER = cfg.FEWSHOT_TUNING.SOLVER
     cfg.DATASETS = cfg.FEWSHOT_TUNING.DATASETS
+    cfg.TEST = cfg.FEWSHOT_TUNING.TEST
     if frozen:
         cfg.freeze()
     return cfg
@@ -217,6 +218,16 @@ class FewShotTuner(DefaultTrainer):
         assert isinstance(trainer, DefaultTrainer)
         for p in trainer.model.da_heads.parameters():
             p.requires_grad = False
+
+    @classmethod
+    def freeze_backbone(cls, trainer):
+        assert isinstance(trainer, DefaultTrainer)
+        for p in trainer.model.backbone.parameters():
+            p.requires_grad = False
+
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name):
+        return PascalVOCDetectionEvaluator_(dataset_name)
 
     def resume_or_load(self, resume=True):
         """

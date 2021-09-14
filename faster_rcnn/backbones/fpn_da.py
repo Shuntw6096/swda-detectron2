@@ -80,4 +80,4 @@ def set_batchnorm_fix(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm') != -1:
         for p in m.parameters(): 
-            p.requires_grad=False
+            p.requires_grad = False

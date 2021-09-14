@@ -40,9 +40,12 @@ def add_swdarcnn_config(cfg):
     _C.FEWSHOT_TUNING = CN()
     _C.FEWSHOT_TUNING.SOLVER = _C_.SOLVER # can not copy directly, because node is same, right one will be modified
     _C.FEWSHOT_TUNING.DATASETS = _C_.DATASETS
+    _C.FEWSHOT_TUNING.BACKBONE_FROZEN = True
     _C.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON = True
     _C.FEWSHOT_TUNING.MODEL = CN()
     _C.FEWSHOT_TUNING.MODEL.WEIGHTS = ''
+    _C.FEWSHOT_TUNING.TEST = _C_.TEST
+    _C.FEWSHOT_TUNING.TEST.EVAL_PERIOD = 1000
 
 def setup(args):
     cfg = get_cfg()
@@ -52,8 +55,12 @@ def setup(args):
     now = datetime.now()
     if args.tuning_only:
         cfg.OUTPUT_DIR = './outputs/output-tuning-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
+        if args.setting_token:
+            cfg.OUTPUT_DIR = './outputs/output-tuning-{}-{}'.format(args.setting_token ,now.strftime("%y-%m-%d_%H-%M"))
     elif not args.resume:
         cfg.OUTPUT_DIR = './outputs/output-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
+        if args.setting_token:
+            cfg.OUTPUT_DIR = './outputs/output-{}-{}'.format(args.setting_token ,now.strftime("%y-%m-%d_%H-%M"))
     cfg.freeze()
     if not args.test_images:
         default_setup(cfg, args)
@@ -101,10 +108,13 @@ def main(args):
 
     if args.tuning_only:
         assert cfg.FEWSHOT_TUNING.MODEL.WEIGHTS, 'FEWSHOT_TUNING.MODEL.WEIGHTS is needed'
+        assert os.path.isfile(cfg.FEWSHOT_TUNING.MODEL.WEIGHTS), '{} not found'.format(cfg.FEWSHOT_TUNING.MODEL.WEIGHTS)
         trainer = FewShotTuner(cfg)
         trainer.resume_or_load(resume=args.resume)
         if not cfg.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON:
             FewShotTuner.freeze_da_heads(trainer)
+        if cfg.FEWSHOT_TUNING.BACKBONE_FROZEN:
+            FewShotTuner.freeze_backbone(trainer)
         return trainer.train()
 
     trainer = DATrainer(cfg)
@@ -116,6 +126,7 @@ if __name__ == "__main__":
     parser = default_argument_parser()
     parser.add_argument("--tuning-only", action="store_true", help="perform few-shot tuning only")
     parser.add_argument("--test-images", action="store_true", help="output predicted bbox to test images")
+    parser.add_argument("--setting-token", help="add some simple profile about this experiment, and add it to output directory name")
     args = parser.parse_args()
     print("Command Line Args:", args)
 
