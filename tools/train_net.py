@@ -24,11 +24,11 @@ from faster_rcnn.da_head.da_roi_head import DAROIHeads
 def add_swdarcnn_config(cfg):
     from detectron2.config import CfgNode as CN
     _C = cfg
-    _C.DA_HEADS = CN()
+    _C.MODEL.DA_HEADS = CN()
     
-    _C.DA_HEADS.LOCAL_ALIGNMENT_ON = True
-    _C.DA_HEADS.GLOBAL_ALIGNMENT_ON = True
-    _C.DA_HEADS.GAMMA = 5.0
+    _C.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON = True
+    _C.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON = True
+    _C.MODEL.DA_HEADS.GAMMA = 5.0
     _C.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON = True
     _C.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_FEATURES = ['local_head_feature', 'global_head_feature']
     _C.DATASETS.SOURCE_DOMAIN = CN()

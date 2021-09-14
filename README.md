@@ -75,7 +75,7 @@ MODEL:
     # same as dataset class, it not count background in 
     NUM_CLASSES: 3
     # it is fixed, feature name
-    CONTEXT_REGULARIZATION_FEATURES: ['local_head_feature', 'global_head_feature']
+    CONTEXT_REGULARIZATION_FEATURES: ["local_head_feature", "global_head_feature"]
     # determine whether to use context vector base regularization or not
     CONTEXT_REGULARIZATION_ON: True
     # determine confidence threshold, 
@@ -85,13 +85,13 @@ MODEL:
   	# if using context vector base regularization, it is fixed
     FC_DIM: 256
 
-# Domain adaptation head settings
-DA_HEADS:
-  # determine whether to use local alignment and global alignment or not
-  LOCAL_ALIGNMENT_ON: True
-  GLOBAL_ALIGNMENT_ON: True
-  # hyper parameter, focal loss at global alignment head
-  GAMMA: 3.0
+  # Domain adaptation head settings
+  DA_HEADS:
+    # determine whether to use local alignment and global alignment or not
+    LOCAL_ALIGNMENT_ON: True
+    GLOBAL_ALIGNMENT_ON: True
+    # hyper parameter, focal loss at global alignment head
+    GAMMA: 3.0
 
 # Optimizer settings, it supports all optimizer features in detectron2
 SOLVER:
@@ -110,7 +110,7 @@ TEST:
 
 # Few-shot tuning settings
 FEWSHOT_TUNING:
-  MODEL
+  MODEL:
   	# the path of model weight being tuned
     WEIGHTS: ""
   # determine whether to freeze domain adaptation head during tuning 
@@ -150,9 +150,10 @@ python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --tuning-
 ``` bash
 python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --test-images MODEL.WEIGHTS $MODEL_WEIGHT_PATH  MODEL.ROI_HEADS.SCORE_THRESH_TEST 0.75
 ```
-### Some experiments
-In my case:
+### Experiments
+* Taiwan dataset -> Tokyo dataset
+
 | Backbone        | mAP:iou50 |
 | ------------- |:-------------:| 
 | vgg16 (official implementation)| 31.28| 
-| resnet50-fpn (ours)| 40.39|
+| resnet50-fpn (ours)| 42.28|

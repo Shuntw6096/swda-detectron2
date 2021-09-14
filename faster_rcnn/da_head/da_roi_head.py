@@ -75,9 +75,9 @@ class DAROIHeads(StandardROIHeads):
         # to define FastRCNNOutputLayers input shape, concat with context regularization feature(global feat, local feat)
         n = 1
         if cfg.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON:
-            if cfg.DA_HEADS.GLOBAL_ALIGNMENT_ON:
+            if cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON:
                 n += 1 
-            if cfg.DA_HEADS.LOCAL_ALIGNMENT_ON:
+            if cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON:
                 n += 1
         box_predictor = FastRCNNOutputLayers(cfg, ShapeSpec(channels=n * box_head.output_shape.channels))
         return {

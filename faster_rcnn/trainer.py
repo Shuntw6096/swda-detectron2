@@ -85,9 +85,9 @@ class DATrainer(DefaultTrainer):
         loss_weight = {'loss_cls': 1, 'loss_box_reg': 1, 'loss_rpn_cls': 1, 'loss_rpn_loc': 1, \
             'loss_local_alignment': 0.5, 'loss_global_alignment': 0.5, \
         }
-        if not cfg.DA_HEADS.LOCAL_ALIGNMENT_ON:
+        if not cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON:
             loss_weight.pop('loss_local_alignment')
-        if not cfg.DA_HEADS.GLOBAL_ALIGNMENT_ON:
+        if not cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON:
             loss_weight.pop('loss_global_alignment')
         self._trainer = _DATrainer(
             model, source_domain_data_loader, target_domain_data_loader, loss_weight, optimizer
