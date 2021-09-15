@@ -109,7 +109,7 @@ class DATrainer(DefaultTrainer):
     
     @classmethod
     def build_train_loader(cls, cfg, dataset_domain):
-        if dataset_domain == 'source': 
+        if dataset_domain == 'source':
             return build_DA_detection_train_loader(cfg, dataset_domain=dataset_domain)
         elif dataset_domain == 'target':
             return build_DA_detection_train_loader(cfg, dataset_domain=dataset_domain)
@@ -217,6 +217,9 @@ class FewShotTuner(DefaultTrainer):
     @classmethod
     def freeze_da_heads(cls, trainer):
         assert isinstance(trainer, DefaultTrainer)
+        cfg = trainer.cfg.clone()
+        assert cfg.MODEL.DOMAIN_ADAPTATION_ON or not cfg.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN, 'network has no domain adaptation head, so it can not be frozen'
+        del cfg
         for p in trainer.model.da_heads.parameters():
             p.requires_grad = False
 
@@ -254,3 +257,51 @@ class DefaultTrainer_(DefaultTrainer):
     @classmethod
     def build_evaluator(cls, cfg, dataset_name):
         return PascalVOCDetectionEvaluator_(dataset_name)
+
+class DATuner(DATrainer):
+     # one2one domain adpatation tuner
+    def __init__(self, cfg):
+        """
+        Args:
+            cfg (CfgNode):
+        """
+        assert not cfg.FEWSHOT_TUNING.DOMAIN_ADAPTATION_TUNING or cfg.MODEL.DOMAIN_ADAPTATION_ON, \
+            'to do domain adaptaion tuning (for inverse domain tuning), network must have domain adaptation head'
+        super(DefaultTrainer, self).__init__()
+        logger = logging.getLogger("detectron2")
+        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
+            setup_logger()
+        cfg = fewshot_tuning_cfg(cfg)
+        cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
+
+        # Assume these objects must be constructed in this order.
+        model = self.build_model(cfg)
+        optimizer = self.build_optimizer(cfg, model)
+        source_domain_data_loader = self.build_train_loader(cfg, 'source')
+        target_domain_data_loader = self.build_train_loader(cfg, 'target')
+
+        model = create_ddp_model(model, broadcast_buffers=False)
+
+        loss_weight = {'loss_cls': 1, 'loss_box_reg': 1, 'loss_rpn_cls': 1, 'loss_rpn_loc': 1, \
+            'loss_local_alignment': 0.5, 'loss_global_alignment': 0.5, \
+        }
+        if not cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON:
+            loss_weight.pop('loss_local_alignment')
+        if not cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON:
+            loss_weight.pop('loss_global_alignment')
+        self._trainer = _DATrainer(
+            model, source_domain_data_loader, target_domain_data_loader, loss_weight, optimizer
+        )
+
+        self.scheduler = self.build_lr_scheduler(cfg, optimizer)
+        self.checkpointer = DetectionCheckpointer(
+            # Assume you want to save checkpoints together with logs/statistics
+            model,
+            cfg.OUTPUT_DIR,
+            trainer=weakref.proxy(self),
+        )
+        self.start_iter = 0
+        self.max_iter = cfg.SOLVER.MAX_ITER
+        self.cfg = cfg
+
+        self.register_hooks(self.build_hooks())   

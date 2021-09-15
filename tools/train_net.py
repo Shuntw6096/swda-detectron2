@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 sys.path.append(os.getcwd())
 
-from faster_rcnn.trainer import DATrainer, FewShotTuner, DefaultTrainer_
+from faster_rcnn.trainer import DATrainer, FewShotTuner, DefaultTrainer_, DATuner
 
 # register datasets
 import faster_rcnn.data.register
@@ -40,10 +40,18 @@ def add_swdarcnn_config(cfg):
     _C.FEWSHOT_TUNING = CN()
     _C.FEWSHOT_TUNING.SOLVER = _C_.SOLVER # can not copy directly, because node is same, right one will be modified
     _C.FEWSHOT_TUNING.DATASETS = _C_.DATASETS
-    _C.FEWSHOT_TUNING.BACKBONE_FROZEN = True
-    _C.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON = True
+    
+    # design for inverse domain tuning
+    _C.FEWSHOT_TUNING.DOMAIN_ADAPTATION_TUNING = True
+    _C.FEWSHOT_TUNING.DATASETS.SOURCE_DOMAIN = CN()
+    _C.FEWSHOT_TUNING.DATASETS.SOURCE_DOMAIN.TRAIN = ()
+    _C.FEWSHOT_TUNING.DATASETS.TARGET_DOMAIN = CN()
+    _C.FEWSHOT_TUNING.DATASETS.TARGET_DOMAIN.TRAIN = ()
+
     _C.FEWSHOT_TUNING.MODEL = CN()
     _C.FEWSHOT_TUNING.MODEL.WEIGHTS = ''
+    _C.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN = False
+    _C.FEWSHOT_TUNING.MODEL.BACKBONE_FROZEN = True
     _C.FEWSHOT_TUNING.TEST = _C_.TEST
     _C.FEWSHOT_TUNING.TEST.EVAL_PERIOD = 1000
 
@@ -64,8 +72,12 @@ def setup(args):
     cfg.freeze()
     assert cfg.MODEL.DOMAIN_ADAPTATION_ON or not cfg.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON, \
         'when using context regularization, network must have domain adapatation head'
-    assert cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON or cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON, \
+    if cfg.MODEL.DOMAIN_ADAPTATION_ON:
+        assert cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON or cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON, \
         'domain adapatation head must have one alignment head (local or global) at least'
+    if args.tuning_only:
+        assert cfg.MODEL.DOMAIN_ADAPTATION_ON or not cfg.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN, 'network has no domain adaptation head, so it can not be frozen'
+        assert not cfg.FEWSHOT_TUNING.DOMAIN_ADAPTATION_TUNING or cfg.MODEL.DOMAIN_ADAPTATION_ON, 'to do domain adaptaion tuning (for inverse domain tuning), network must have domain adaptation head'
     if not args.test_images:
         default_setup(cfg, args)
     return cfg
@@ -113,11 +125,14 @@ def main(args):
     if args.tuning_only:
         assert cfg.FEWSHOT_TUNING.MODEL.WEIGHTS, 'FEWSHOT_TUNING.MODEL.WEIGHTS is needed'
         assert os.path.isfile(cfg.FEWSHOT_TUNING.MODEL.WEIGHTS), '{} not found'.format(cfg.FEWSHOT_TUNING.MODEL.WEIGHTS)
-        trainer = FewShotTuner(cfg)
+        if cfg.FEWSHOT_TUNING.DOMAIN_ADAPTATION_TUNING:
+            trainer = DATuner(cfg)
+        else:
+            trainer = FewShotTuner(cfg)
         trainer.resume_or_load(resume=args.resume)
-        if not cfg.FEWSHOT_TUNING.DOMAIN_ADAPTATION_ON:
+        if not cfg.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN:
             FewShotTuner.freeze_da_heads(trainer)
-        if cfg.FEWSHOT_TUNING.BACKBONE_FROZEN:
+        if cfg.FEWSHOT_TUNING.MODEL.BACKBONE_FROZEN:
             FewShotTuner.freeze_backbone(trainer)
         return trainer.train()
 
@@ -136,7 +151,6 @@ if __name__ == "__main__":
     parser.add_argument("--setting-token", help="add some simple profile about this experiment to output directory name")
     args = parser.parse_args()
     print("Command Line Args:", args)
-
 
     launch(
         main,
