@@ -176,3 +176,4 @@ python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --test-im
 | ------------- |:-------------:| 
 | vgg16 (official implementation)| 31.28| 
 | resnet50-fpn (ours)| 42.28|
+| resnet50-fpn after few-shot tuning (ours)| 56.26|
