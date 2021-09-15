@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from detectron2.config import configurable
 from detectron2.structures import Instances
 from detectron2.modeling.meta_arch import GeneralizedRCNN
@@ -18,7 +18,7 @@ class SWDARCNN(GeneralizedRCNN):
         backbone: Backbone,
         proposal_generator: nn.Module,
         roi_heads: nn.Module,
-        da_heads: nn.Module,
+        da_heads: Union[nn.Module, None],
         pixel_mean: Tuple[float],
         pixel_std: Tuple[float],
         input_format: Optional[str] = None,
@@ -27,16 +27,21 @@ class SWDARCNN(GeneralizedRCNN):
         super().__init__(backbone=backbone, proposal_generator=proposal_generator, roi_heads=roi_heads, \
             pixel_mean=pixel_mean, pixel_std=pixel_std, input_format=input_format, vis_period=vis_period, \
         )
+
         self.da_heads = da_heads
 
     @classmethod
     def from_config(cls, cfg):
         backbone = build_backbone(cfg)
+        if cfg.MODEL.DOMAIN_ADAPTATION_ON:
+            da_haeds = build_da_heads(cfg)
+        else:
+            da_haeds = None
         return {
             "backbone": backbone,
             "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
             "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
-            "da_heads": build_da_heads(cfg),
+            "da_heads": da_haeds,
             "input_format": cfg.INPUT.FORMAT,
             "vis_period": cfg.VIS_PERIOD,
             "pixel_mean": cfg.MODEL.PIXEL_MEAN,
@@ -74,21 +79,25 @@ class SWDARCNN(GeneralizedRCNN):
             gt_instances = None
         
         features = self.backbone(images.tensor)
-        resnet_feat = {
-            'local_head_feature': features.pop('res2'), 
-            'global_head_feature': features.pop('res4'), 
-            'feature domain': input_domain,
-            }
-        if input_domain == 'source':
-            reg_faeture, da_loss = self.da_heads(resnet_feat)
+        if self.da_heads:
+            resnet_feat = {
+                'local_head_feature': features.pop('res2'), 
+                'global_head_feature': features.pop('res4'), 
+                'feature domain': input_domain,
+                }
+            if input_domain == 'source':
+                reg_faeture, da_loss = self.da_heads(resnet_feat)
 
-        elif input_domain == 'target':
-            _, da_loss = self.da_heads(resnet_feat)
-            losses = {}
-            losses.update(da_loss)
-            return losses
+            elif input_domain == 'target':
+                _, da_loss = self.da_heads(resnet_feat)
+                losses = {}
+                losses.update(da_loss)
+                return losses
 
-        features.update(reg_faeture)
+            features.update(reg_faeture)
+        else:
+            features.pop('res2')
+            features.pop('res4')
 
         if self.proposal_generator is not None:
             proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
@@ -107,7 +116,8 @@ class SWDARCNN(GeneralizedRCNN):
         losses = {}
         losses.update(detector_losses)
         losses.update(proposal_losses)
-        losses.update(da_loss)
+        if self.da_heads:
+            losses.update(da_loss)
         return losses
 
     def inference(
@@ -135,14 +145,19 @@ class SWDARCNN(GeneralizedRCNN):
 
         images = self.preprocess_image(batched_inputs)
         features = self.backbone(images.tensor)
-        # context regularization vector
-        resnet_feat = {
-            'local_head_feature': features.pop('res2'), 
-            'global_head_feature': features.pop('res4'), 
-            'feature domain': None
-            }
-        reg_feat = self.da_heads(resnet_feat)
-        features.update(reg_feat)
+        if self.da_heads:
+            resnet_feat = {
+                'local_head_feature': features.pop('res2'), 
+                'global_head_feature': features.pop('res4'), 
+                'feature domain': None
+                }
+            # context regularization vector
+            reg_feat = self.da_heads(resnet_feat)
+            features.update(reg_feat)
+        else:
+            features.pop('res2')
+            features.pop('res4')
+
         if detected_instances is None:
             if self.proposal_generator is not None:
                 proposals, _ = self.proposal_generator(images, features, None)

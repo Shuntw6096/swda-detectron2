@@ -63,6 +63,7 @@ class _DATrainer(SimpleTrainer):
 
 
 class DATrainer(DefaultTrainer):
+    # one2one domain adpatation trainer
     def __init__(self, cfg):
         """
         Args:
@@ -249,3 +250,7 @@ class FewShotTuner(DefaultTrainer):
             # at the next iteration
             self.start_iter = self.iter + 1
 
+class DefaultTrainer_(DefaultTrainer):
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name):
+        return PascalVOCDetectionEvaluator_(dataset_name)

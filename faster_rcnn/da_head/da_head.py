@@ -96,6 +96,7 @@ class AlignmentHead(nn.Module):
 
   @classmethod
   def from_config(cls, cfg):
+    assert cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON or cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON, 'domain adapatation head must have one alignment head (local or global) at least'
     return {
       'gamma': cfg.MODEL.DA_HEADS.GAMMA,
       'local_alignment_on': cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON,

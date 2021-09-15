@@ -4,6 +4,7 @@ DATASETS:
     TRAIN: ("itri-taiwan-416_train",)
   TARGET_DOMAIN:
     TRAIN: ("tokyo-320-v2_train",)
+  TRAIN: ("itri-taiwan-416_train",)
   TEST: ("tokyo-320_test",)
 MODEL:
   META_ARCHITECTURE: "SWDARCNN"
@@ -13,13 +14,13 @@ MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   KEYPOINT_ON: False
   MASK_ON: False
-  DOMAIN_ADAPTATION_ON: True
+  DOMAIN_ADAPTATION_ON: False
   ROI_HEADS:
     NAME: "DAROIHeads"
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     NUM_CLASSES: 3
     CONTEXT_REGULARIZATION_FEATURES: ['local_head_feature', 'global_head_feature']
-    CONTEXT_REGULARIZATION_ON: True
+    CONTEXT_REGULARIZATION_ON: False
   ROI_BOX_HEAD:
     FC_DIM: 256
   DA_HEADS:

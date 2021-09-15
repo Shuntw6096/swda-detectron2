@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 sys.path.append(os.getcwd())
 
-from faster_rcnn.trainer import DATrainer, FewShotTuner
+from faster_rcnn.trainer import DATrainer, FewShotTuner, DefaultTrainer_
 
 # register datasets
 import faster_rcnn.data.register
@@ -25,7 +25,7 @@ def add_swdarcnn_config(cfg):
     from detectron2.config import CfgNode as CN
     _C = cfg
     _C.MODEL.DA_HEADS = CN()
-    
+    _C.MODEL.DOMAIN_ADAPTATION_ON = True
     _C.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON = True
     _C.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON = True
     _C.MODEL.DA_HEADS.GAMMA = 5.0
@@ -56,12 +56,16 @@ def setup(args):
     if args.tuning_only:
         cfg.OUTPUT_DIR = './outputs/output-tuning-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
         if args.setting_token:
-            cfg.OUTPUT_DIR = './outputs/output-tuning-{}-{}'.format(args.setting_token ,now.strftime("%y-%m-%d_%H-%M"))
+            cfg.OUTPUT_DIR = './outputs/output-tuning-{}-{}'.format(args.setting_token, now.strftime("%y-%m-%d_%H-%M"))
     elif not args.resume:
         cfg.OUTPUT_DIR = './outputs/output-{}'.format(now.strftime("%y-%m-%d_%H-%M"))
         if args.setting_token:
-            cfg.OUTPUT_DIR = './outputs/output-{}-{}'.format(args.setting_token ,now.strftime("%y-%m-%d_%H-%M"))
+            cfg.OUTPUT_DIR = './outputs/output-{}-{}'.format(args.setting_token, now.strftime("%y-%m-%d_%H-%M"))
     cfg.freeze()
+    assert cfg.MODEL.DOMAIN_ADAPTATION_ON or not cfg.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON, \
+        'when using context regularization, network must have domain adapatation head'
+    assert cfg.MODEL.DA_HEADS.LOCAL_ALIGNMENT_ON or cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON, \
+        'domain adapatation head must have one alignment head (local or global) at least'
     if not args.test_images:
         default_setup(cfg, args)
     return cfg
@@ -117,7 +121,10 @@ def main(args):
             FewShotTuner.freeze_backbone(trainer)
         return trainer.train()
 
-    trainer = DATrainer(cfg)
+    if cfg.MODEL.DOMAIN_ADAPTATION_ON:
+        trainer = DATrainer(cfg)
+    else:
+        trainer = DefaultTrainer_(cfg)
     trainer.resume_or_load(resume=args.resume)
     return trainer.train()
 
@@ -126,7 +133,7 @@ if __name__ == "__main__":
     parser = default_argument_parser()
     parser.add_argument("--tuning-only", action="store_true", help="perform few-shot tuning only")
     parser.add_argument("--test-images", action="store_true", help="output predicted bbox to test images")
-    parser.add_argument("--setting-token", help="add some simple profile about this experiment, and add it to output directory name")
+    parser.add_argument("--setting-token", help="add some simple profile about this experiment to output directory name")
     args = parser.parse_args()
     print("Command Line Args:", args)
 

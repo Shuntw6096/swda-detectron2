@@ -61,7 +61,6 @@ def _DA_train_loader_from_config(cfg, mapper=None, *, dataset_domain=None, datas
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
     }
 
-# def _train_loader_from_config(cfg, mapper=None, *, dataset_source=None, dataset=None, sampler=None):
 
 @configurable(from_config=_DA_train_loader_from_config)
 def build_DA_detection_train_loader(
