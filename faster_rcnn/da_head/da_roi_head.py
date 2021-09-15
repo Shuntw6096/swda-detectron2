@@ -74,6 +74,7 @@ class DAROIHeads(StandardROIHeads):
         )
         # to define FastRCNNOutputLayers input shape, concat with context regularization feature(global feat, local feat)
         assert cfg.MODEL.DOMAIN_ADAPTATION_ON or not cfg.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON, 'when using context regularization, network must have domain adapatation head'
+
         n = 1
         if cfg.MODEL.ROI_HEADS.CONTEXT_REGULARIZATION_ON:
             if cfg.MODEL.DA_HEADS.GLOBAL_ALIGNMENT_ON:
