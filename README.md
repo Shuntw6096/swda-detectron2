@@ -53,10 +53,14 @@ register_coco_instances(meta_name, meta_data, json_file_path, image_root)
 _BASE_: "./Base-RCNN-FPN.yaml"
 # dataset settings, souce and target domain dataset, but test set does not have domain setting
 DATASETS:
+  # domain adaptation trainer's training setting
   SOURCE_DOMAIN:
     TRAIN: ("itri-taiwan-416_train",)
   TARGET_DOMAIN:
     TRAIN: ("tokyo-320-v2_train",)
+  # default trainer's training setting,
+  # when not using domain adaptation, load this training set to train noraml faster-rcnn
+  TRAIN: ("itri-taiwan-416_train",)
   TEST: ("tokyo-320_test",)
 
 # Model settings
@@ -69,6 +73,8 @@ MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   KEYPOINT_ON: False
   MASK_ON: False
+  # determine whether to use domain adaptation or not, if not, just a normal faster-rcnn
+  DOMAIN_ADAPTATION_ON: True
   ROI_HEADS:
     NAME: "DAROIHeads"
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
@@ -82,7 +88,7 @@ MODEL:
     # boxes are outputed on images while testing if its confidence is above threshold
     SCORE_THRESH_TEST: 0.75
   ROI_BOX_HEAD:
-  	# if using context vector base regularization, it is fixed
+    # if using context vector base regularization, it is fixed
     FC_DIM: 256
 
   # Domain adaptation head settings
@@ -110,15 +116,28 @@ TEST:
 
 # Few-shot tuning settings
 FEWSHOT_TUNING:
+  # determine whether to use domain adaptation tuner to tune network,
+  # it is designed for inverse domain tuning.
+  # If False, use training set being source data to tune network with few-shot tuner
+  DOMAIN_ADAPTATION_TUNING: True
   MODEL:
-  	# the path of model weight being tuned
+    # the path of model weight being tuned
     WEIGHTS: ""
-  # determine whether to freeze domain adaptation head during tuning 
-  DOMAIN_ADAPTATION_ON: False
-  # it does not have domain setting, same as original detectron2 settings
+    # determine whether to freeze backnone (feature extractor) during tuning 
+    BACKBONE_FROZEN: False
+    # determine whether to freeze domain adaptation head during tuning 
+    DA_HEADS_FROZEN: False
+
   DATASETS:
+    # domain adaptation tuner's training setting
+    SOURCE_DOMAIN:
+      TRAIN: ("tokyo-320-v2-tuning_train",)
+    TARGET_DOMAIN:
+      TRAIN: ("itri-taiwan-416-tunung_train",)
+    # few-shot tuner's training setting
     TRAIN: ("tokyo-320-v2-tuning_train",)
     TEST: ("tokyo-320_test",)
+
   # it also support all optimizer features in detectron2
   SOLVER:
     IMS_PER_BATCH: 1 # batch size
@@ -157,3 +176,4 @@ python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --test-im
 | ------------- |:-------------:| 
 | vgg16 (official implementation)| 31.28| 
 | resnet50-fpn (ours)| 42.28|
+| resnet50-fpn after few-shot tuning (ours)| 56.26|
