@@ -130,7 +130,7 @@ def main(args):
         else:
             trainer = FewShotTuner(cfg)
         trainer.resume_or_load(resume=args.resume)
-        if not cfg.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN:
+        if cfg.FEWSHOT_TUNING.MODEL.DA_HEADS_FROZEN:
             FewShotTuner.freeze_da_heads(trainer)
         if cfg.FEWSHOT_TUNING.MODEL.BACKBONE_FROZEN:
             FewShotTuner.freeze_backbone(trainer)
