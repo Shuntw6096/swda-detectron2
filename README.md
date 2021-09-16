@@ -1,11 +1,15 @@
 # A Detectron2 Implementation of [Strong-Weak Distribution Alignment for Adaptive Object Detection](https://arxiv.org/pdf/1812.04798.pdf) (CVPR 2019)
-Official Implementation: [VisionLearningGroup/DA_Detection](https://github.com/VisionLearningGroup/DA_Detection)
+Official implementation: [VisionLearningGroup/DA_Detection](https://github.com/VisionLearningGroup/DA_Detection)
+
 ### Features
 now only supports [ResNet50-FPN](https://github.com/facebookresearch/detectron2/blob/main/configs/Base-RCNN-FPN.yaml)
 1. local alignment (image alignment)
 2. global alignment (image alignment)
 3. context vector base regularization
 4. Few-shot tuning
+
+### Network architecture
+<img src='./docs/resnet50-fpn-da.jpg' width=900>  
 
 ### Environment
 ```
@@ -151,6 +155,12 @@ FEWSHOT_TUNING:
 # smaller to make tfevents file larger 
 VIS_PERIOD: 5000
 ```
+
+* [faster-rcnn_R_50_FPN_1x.yaml](./configs/faster-rcnn_R_50_FPN_1x.yaml) is normal faster rcnn configuration file  
+* [swda_rcnn_clg_R_50_FPN_1x.yaml](swda_rcnn_clg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and local and global alignment configuration file  
+* [swda_rcnn_cg_R_50_FPN_1x.yaml](swda_rcnn_cg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and global alignment configuration file
+* [swda_rcnn_lg_R_50_FPN_1x.yaml](swda_rcnn_lg_R_50_FPN_1x.yaml) is faster rcnn with global and local alignment configuration file
+
 ### Usages
 * train a model
 ``` bash
@@ -165,7 +175,7 @@ python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --eval-on
 ``` bash
 python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --tuning-only FEWSHOT_TUNING.MODEL.WEIGHTS $MODEL_WEIGHT_PATH
 ```
-* predict boxes on test set
+* predict boxes on the test set
 ``` bash
 python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --test-images MODEL.WEIGHTS $MODEL_WEIGHT_PATH  MODEL.ROI_HEADS.SCORE_THRESH_TEST 0.75
 ```
@@ -175,5 +185,5 @@ python tools/train_net.py --config-file $CONFIG_FILE_PATH --num-gpus 1 --test-im
 | Backbone        | mAP:iou50 |
 | ------------- |:-------------:| 
 | vgg16 (official implementation)| 31.28| 
-| resnet50-fpn (ours)| 42.28|
+| resnet50-fpn (ours)| 41.11|
 | resnet50-fpn after few-shot tuning (ours)| 56.26|

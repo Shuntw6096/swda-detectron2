@@ -304,4 +304,4 @@ class DATuner(DATrainer):
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.cfg = cfg
 
-        self.register_hooks(self.build_hooks())
+        self.register_hooks(self.build_hooks())   
