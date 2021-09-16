@@ -1,5 +1,6 @@
 # A Detectron2 Implementation of [Strong-Weak Distribution Alignment for Adaptive Object Detection](https://arxiv.org/pdf/1812.04798.pdf) (CVPR 2019)
 Official implementation: [VisionLearningGroup/DA_Detection](https://github.com/VisionLearningGroup/DA_Detection)
+
 ### Features
 now only supports [ResNet50-FPN](https://github.com/facebookresearch/detectron2/blob/main/configs/Base-RCNN-FPN.yaml)
 1. local alignment (image alignment)
@@ -154,6 +155,7 @@ FEWSHOT_TUNING:
 # smaller to make tfevents file larger 
 VIS_PERIOD: 5000
 ```
+
 * [faster-rcnn_R_50_FPN_1x.yaml](./configs/faster-rcnn_R_50_FPN_1x.yaml) is normal faster rcnn configuration file  
 * [swda_rcnn_clg_R_50_FPN_1x.yaml](swda_rcnn_clg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and local and global alignment configuration file  
 * [swda_rcnn_cg_R_50_FPN_1x.yaml](swda_rcnn_cg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and global alignment configuration file
