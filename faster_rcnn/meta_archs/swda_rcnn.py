@@ -37,7 +37,6 @@ class SWDARCNN(GeneralizedRCNN):
             da_haeds = build_da_heads(cfg)
         else:
             da_haeds = None
-
         return {
             "backbone": backbone,
             "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),

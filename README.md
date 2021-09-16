@@ -157,9 +157,9 @@ VIS_PERIOD: 5000
 ```
 
 * [faster-rcnn_R_50_FPN_1x.yaml](./configs/faster-rcnn_R_50_FPN_1x.yaml) is normal faster rcnn configuration file  
-* [swda_rcnn_clg_R_50_FPN_1x.yaml](swda_rcnn_clg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and local and global alignment configuration file  
-* [swda_rcnn_cg_R_50_FPN_1x.yaml](swda_rcnn_cg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and global alignment configuration file
-* [swda_rcnn_lg_R_50_FPN_1x.yaml](swda_rcnn_lg_R_50_FPN_1x.yaml) is faster rcnn with global and local alignment configuration file
+* [swda_rcnn_clg_R_50_FPN_1x.yaml](./configs/swda_rcnn_clg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and local and global alignment configuration file  
+* [swda_rcnn_cg_R_50_FPN_1x.yaml](./configs/swda_rcnn_cg_R_50_FPN_1x.yaml) is faster rcnn with context regularization and global alignment configuration file
+* [swda_rcnn_lg_R_50_FPN_1x.yaml](./configs/swda_rcnn_lg_R_50_FPN_1x.yaml) is faster rcnn with global and local alignment configuration file
 
 ### Usages
 * train a model
