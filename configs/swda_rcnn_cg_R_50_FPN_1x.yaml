@@ -42,10 +42,10 @@ FEWSHOT_TUNING:
     DA_HEADS_FROZEN: True
   DATASETS:
     SOURCE_DOMAIN:
-      TRAIN: ("tokyo-320-v2-val",)
+      TRAIN: ("tokyo-320-v2_val",)
     TARGET_DOMAIN:
-      TRAIN: ("itri-taiwan-416-val",)
-    TRAIN: ("tokyo-320-v2-val",)
+      TRAIN: ("itri-taiwan-416_val",)
+    TRAIN: ("tokyo-320-v2_val",)
     TEST: ("tokyo-320_test",)
   SOLVER:
     IMS_PER_BATCH: 1 # batch size
