@@ -135,11 +135,11 @@ FEWSHOT_TUNING:
   DATASETS:
     # domain adaptation tuner's training setting
     SOURCE_DOMAIN:
-      TRAIN: ("tokyo-320-v2-tuning_train",)
+      TRAIN: ("tokyo-320-v2_val",)
     TARGET_DOMAIN:
-      TRAIN: ("itri-taiwan-416-tunung_train",)
+      TRAIN: ("itri-taiwan-416_val",)
     # few-shot tuner's training setting
-    TRAIN: ("tokyo-320-v2-tuning_train",)
+    TRAIN: ("tokyo-320-v2_val",)
     TEST: ("tokyo-320_test",)
 
   # it also support all optimizer features in detectron2

@@ -22,6 +22,7 @@ split = 'train' # "train", "test", "val", "trainval"
 meta_name = 'tokyo-320-v2_{}'.format(split)
 register_pascal_voc(meta_name, dataset_dir, split, years, classes)
 split = 'val'
+meta_name = 'tokyo-320-v2_{}'.format(split)
 register_pascal_voc(meta_name, dataset_dir, split, years, classes)
 
 
